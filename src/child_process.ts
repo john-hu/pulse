@@ -4,10 +4,13 @@ const exec = promisify(cprocess.exec);
 
 export const execChildCommand = async (
   command: string,
-  cwd: string
+  cwd: string,
+  redirectOutput: boolean = true
 ): Promise<{ stdout: string; stderr: string }> => {
   const { stdout, stderr } = await exec(command, { cwd });
-  console.log(stdout);
-  console.error(stderr);
+  if (!redirectOutput) {
+    console.log(stdout);
+    console.error(stderr);
+  }
   return { stdout, stderr };
 };

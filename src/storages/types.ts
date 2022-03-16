@@ -4,7 +4,7 @@ export enum StorageType {
 }
 
 export type Record = {
-  dateTime?: string;
+  dateTime: string;
   project: string;
   language: string;
   fileCount: number;
@@ -16,4 +16,11 @@ export type Record = {
 export interface Storage {
   init(path: string): Promise<void>;
   putRecords(records: Record[]): Promise<void>;
+  finalize(): Promise<void>;
 }
+
+export type Commit = {
+  dateTime: string;
+  shortHash: string;
+  authorEmail: string;
+};

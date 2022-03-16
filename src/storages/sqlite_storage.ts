@@ -1,5 +1,6 @@
 import { PromisedDatabase as Database } from 'promised-sqlite3';
-import { Record, Storage, StorageType } from './types';
+import { StorageType } from './types';
+import { BaseStorage } from './base_storage';
 
 const CREATE_MAIN_TABLE = `
 CREATE TABLE IF NOT EXISTS ClocRecords(
@@ -14,7 +15,7 @@ CREATE TABLE IF NOT EXISTS ClocRecords(
 );
 `;
 
-export class SQLiteStorage implements Storage {
+export class SQLiteStorage extends BaseStorage {
   path: string = '';
   type: StorageType = StorageType.SQLite;
 
@@ -25,18 +26,17 @@ export class SQLiteStorage implements Storage {
     await db.run(CREATE_MAIN_TABLE);
     await db.close();
   }
-  async putRecords(records: Record[]): Promise<void> {
+  protected async flushBuffer(): Promise<void> {
     const db = new Database();
     await db.open(this.path);
     await db.run('BEGIN TRANSACTION;');
-    const now: string = new Date().toISOString();
     try {
-      for (const record of records) {
+      for (const record of this.buffers) {
         await db.run(
           `INSERT INTO
           ClocRecords(dateTime, project, language, fileCount, blankLines, commentLines, codeLines)
           VALUES(?, ?, ?, ?, ?, ?, ?);`,
-          record.dateTime || now,
+          record.dateTime,
           record.project,
           record.language,
           record.fileCount,

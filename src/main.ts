@@ -29,10 +29,25 @@ dotenv.config();
     default: './data.json',
     help: 'The cloc list file.',
   });
+  parser.add_argument('--main-branch', {
+    type: 'str',
+    default: 'main',
+    help: 'The main branch name',
+  });
+  parser.add_argument('--cloc-main', {
+    type: 'str',
+    help: 'Run the cloc in HEAD commit of main branch, true/false',
+    default: 'true',
+  });
   const args = parser.parse_args();
   const storageType = args.storage_type === 'sqlite' ? StorageType.SQLite : StorageType.JSON;
   const workspace = new Workspace(args.workspace, storageType, args.storage_path);
-  await workspace.init();
+  await workspace.init(args.main_branch);
   await workspace.syncRepo(args.repo, args.name);
-  await workspace.cloc(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
+  if (args.cloc_main === 'false') {
+    await workspace.clocAll(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
+  } else {
+    await workspace.cloc(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
+  }
+  await workspace.finalize();
 })();

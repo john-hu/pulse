@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "argparse": "^2.0.1",
+    "dayjs": "^1.11.0",
     "dotenv": "^16.0.0",
     "mkdirs": "^0.0.3",
     "node-fetch": "^3.2.3",
