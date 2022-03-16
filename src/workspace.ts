@@ -2,22 +2,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { execChildCommand } from './child_process';
-import { SQLiteStorage } from './sqlite_storage';
-import { Record } from './types';
+import { createStorage, Record, StorageType } from './storages';
 
 export class Workspace {
   baseFolder: string = '.';
-  storageFile: string = ':memory:';
+  storageType: StorageType = StorageType.JSON;
+  storagePath: string = '';
 
-  constructor(base: string) {
+  constructor(base: string, storageType: StorageType, storagePath: string) {
     this.baseFolder = base;
-    this.storageFile = path.join(this.baseFolder, 'data.db');
+    this.storageType = storageType;
+    this.storagePath = storagePath;
   }
 
   async init(): Promise<void> {
     await fs.promises.mkdir(this.baseFolder, { recursive: true });
-    const storage = new SQLiteStorage();
-    await storage.init(this.storageFile);
   }
 
   async syncRepo(repo: string, folderName: string): Promise<void> {
@@ -72,9 +71,8 @@ export class Workspace {
     this.putRecords(records);
   }
 
-  async putRecords(records: Record[]) {
-    const storage = new SQLiteStorage();
-    await storage.init(this.storageFile);
+  async putRecords(records: Record[]): Promise<void> {
+    const storage = await createStorage(StorageType.JSON, this.storagePath);
     await storage.putRecords(records);
   }
 }

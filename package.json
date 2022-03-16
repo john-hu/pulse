@@ -6,6 +6,9 @@
   "repository": "git@github.com:john-hu/pulse.git",
   "author": "John Hu <im@john.hu>",
   "license": "MIT",
+  "engines": {
+    "node": ">=14"
+  },
   "devDependencies": {
     "@types/argparse": "^2.0.10",
     "@types/node": "^17.0.21",

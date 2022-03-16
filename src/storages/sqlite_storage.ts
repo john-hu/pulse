@@ -1,5 +1,5 @@
 import { PromisedDatabase as Database } from 'promised-sqlite3';
-import { Record, Storage } from './types';
+import { Record, Storage, StorageType } from './types';
 
 const CREATE_MAIN_TABLE = `
 CREATE TABLE IF NOT EXISTS ClocRecords(
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS ClocRecords(
 
 export class SQLiteStorage implements Storage {
   path: string = '';
+  type: StorageType = StorageType.SQLite;
 
   async init(path: string): Promise<void> {
     this.path = path;

@@ -1,3 +1,8 @@
+export enum StorageType {
+  SQLite,
+  JSON,
+}
+
 export type Record = {
   dateTime?: string;
   project: string;
