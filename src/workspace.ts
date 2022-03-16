@@ -1,35 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { PromisedDatabase as Database } from 'promised-sqlite3';
 import { execChildCommand } from './child_process';
-
-const CREATE_MAIN_TABLE = `
-CREATE TABLE IF NOT EXISTS ClocRecords(
-  dateTime TEXT,
-  project TEXT,
-  language TEXT,
-  fileCount INTEGER,
-  blankLines INTEGER,
-  commentLines INTEGER,
-  codeLines INTEGER
-);
-`;
+import { SQLiteStorage } from './sqlite_storage';
+import { Record } from './types';
 
 export class Workspace {
   baseFolder: string = '.';
-  databaseFile: string = ':memory:';
+  storageFile: string = ':memory:';
+
   constructor(base: string) {
     this.baseFolder = base;
-    this.databaseFile = path.join(this.baseFolder, 'data.db');
+    this.storageFile = path.join(this.baseFolder, 'data.db');
   }
 
   async init(): Promise<void> {
-    fs.promises.mkdir(this.baseFolder, { recursive: true });
-    const db = new Database();
-    await db.open(this.databaseFile);
-    await db.run(CREATE_MAIN_TABLE);
-    await db.close();
+    await fs.promises.mkdir(this.baseFolder, { recursive: true });
+    const storage = new SQLiteStorage();
+    await storage.init(this.storageFile);
   }
 
   async syncRepo(repo: string, folderName: string): Promise<void> {
@@ -66,36 +54,27 @@ export class Workspace {
     const jsonContent = await fs.promises.readFile(jsonPath, { encoding: 'utf8' });
     const clocData = JSON.parse(jsonContent);
     const keys = Object.keys(clocData);
-
-    const db = new Database();
-    await db.open(this.databaseFile);
-    await db.run('BEGIN TRANSACTION;');
-    const now: string = new Date().toISOString();
-    try {
-      for (const language of keys) {
-        if (['header', 'SUM'].indexOf(language) > -1) {
-          continue;
-        }
-        const languageResult = clocData[language];
-        await db.run(
-          `INSERT INTO
-          ClocRecords(dateTime, project, language, fileCount, blankLines, commentLines, codeLines)
-          VALUES(?, ?, ?, ?, ?, ?, ?);`,
-          now,
-          folderName,
-          language,
-          languageResult.nFiles,
-          languageResult.blank,
-          languageResult.comment,
-          languageResult.code
-        );
+    const records: Record[] = keys.reduce<Record[]>((acc, language) => {
+      if (['header', 'SUM'].indexOf(language) > -1) {
+        return acc;
       }
-      await db.run('COMMIT;');
-    } catch (ex) {
-      await db.run('ROLLBACK;');
-      throw ex;
-    } finally {
-      await db.close();
-    }
+      const languageResult = clocData[language];
+      acc.push({
+        project: folderName,
+        language,
+        fileCount: languageResult.nFiles,
+        blankLines: languageResult.blank,
+        commentLines: languageResult.comment,
+        codeLines: languageResult.code,
+      });
+      return acc;
+    }, []);
+    this.putRecords(records);
+  }
+
+  async putRecords(records: Record[]) {
+    const storage = new SQLiteStorage();
+    await storage.init(this.storageFile);
+    await storage.putRecords(records);
   }
 }
