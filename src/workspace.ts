@@ -29,7 +29,7 @@ export class Workspace {
     await fs.promises.mkdir(this.baseFolder, { recursive: true });
     this.tempFolder = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pulse-'));
     this.mainBranch = mainBranch;
-    this.storage = await createStorage(StorageType.JSON, this.storagePath);
+    this.storage = await createStorage(this.storageType, this.storagePath);
   }
 
   async syncRepo(repo: string, folderName: string): Promise<void> {
@@ -58,11 +58,12 @@ export class Workspace {
     }
   }
 
-  async clocAll(folderName: string, fileList?: string): Promise<void> {
+  async clocAll(folderName: string, fileList?: string, since?: string): Promise<void> {
     const projectFolder = path.join(this.baseFolder, folderName);
     const commitsPath = path.join(this.tempFolder, `${folderName}.commits.list`);
+    const sinceArg = since ? ` --since="${since}"` : '';
     await execChildCommand(
-      `git log --pretty='format:%aI %h %ae' > ${commitsPath}`,
+      `git log --pretty='format:%aI %h %ae'${sinceArg} > ${commitsPath}`,
       projectFolder,
       false
     );

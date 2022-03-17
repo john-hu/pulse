@@ -22,12 +22,12 @@ dotenv.config();
   parser.add_argument('--storage-type', {
     type: 'str',
     default: 'json',
-    help: 'The cloc list file.',
+    help: 'The storage type, json or sqlite.',
   });
   parser.add_argument('--storage-path', {
     type: 'str',
     default: './data.json',
-    help: 'The cloc list file.',
+    help: 'The data storage.',
   });
   parser.add_argument('--main-branch', {
     type: 'str',
@@ -39,13 +39,21 @@ dotenv.config();
     help: 'Run the cloc in HEAD commit of main branch, true/false',
     default: 'true',
   });
+  parser.add_argument('--analyze-since', {
+    type: 'str',
+    help: 'Analyze the code since a specific date in format YYYY-MM-DD.',
+  });
   const args = parser.parse_args();
   const storageType = args.storage_type === 'sqlite' ? StorageType.SQLite : StorageType.JSON;
   const workspace = new Workspace(args.workspace, storageType, args.storage_path);
   await workspace.init(args.main_branch);
   await workspace.syncRepo(args.repo, args.name);
   if (args.cloc_main === 'false') {
-    await workspace.clocAll(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
+    await workspace.clocAll(
+      args.name,
+      args.cloc_list ? path.resolve(args.cloc_list) : undefined,
+      args.analyze_since
+    );
   } else {
     await workspace.cloc(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
   }
