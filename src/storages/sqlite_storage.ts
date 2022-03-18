@@ -31,17 +31,18 @@ export class SQLiteStorage extends BaseStorage {
     const db = new Database();
     await db.open(this.path);
     try {
-      const lastDateTime: string = await db.get(
-        'SELECT dateTime FROM ClocRecord WHERE project = ? ORDER BY dateTime DESC LIMIT 1',
+      const lastDateTime: { dateTime: string } = await db.get(
+        'SELECT dateTime FROM ClocRecords WHERE project = ? ORDER BY dateTime DESC LIMIT 1',
         project
       );
-      return (await db.all(
+      const result = (await db.all(
         `SELECT dateTime, project, language, fileCount, blankLines, commentLines, codeLines
-          FROM ClocRecord
+          FROM ClocRecords
           WHERE dateTime = ? AND project = ?
           ORDER BY dateTime DESC`,
-        [lastDateTime, project]
+        [lastDateTime.dateTime, project]
       )) as Record[];
+      return result;
     } finally {
       await db.close();
     }

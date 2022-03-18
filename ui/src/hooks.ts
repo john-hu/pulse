@@ -109,6 +109,7 @@ export const useHighchart = (
         const sliced = sliceTimeSeriesDataset(dataset, nextStartDate.current!, MOVEMENT_SIZE);
         const timeSeries = toHighchartSeries(sliced);
         // merge data, update, and animate them.
+        // TODO: remove series data if they are outdated.
         series.forEach((hcSeries: Highcharts.Series, index: number) => {
           let newData = [...hcSeries.data, ...timeSeries[index].data!];
           if (newData.length > windowSize) {

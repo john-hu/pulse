@@ -41,10 +41,6 @@ dotenv.config();
     help: 'Run the cloc in HEAD commit of main branch, true/false',
     default: 'true',
   });
-  parser.add_argument('--analyze-since', {
-    type: 'str',
-    help: 'Analyze the code since a specific date in format YYYY-MM-DD.',
-  });
   const args = parser.parse_args();
   const storageType = args.storage_type === 'sqlite' ? StorageType.SQLite : StorageType.JSON;
   const workspace = new Workspace(args.workspace, storageType, args.storage_path);
@@ -56,7 +52,7 @@ dotenv.config();
     excludeLang: args.cloc_exclude_lang,
   };
   if (args.cloc_main === 'false') {
-    await workspace.clocAll(args.name, clocOptions, args.analyze_since);
+    await workspace.clocAll(args.name, clocOptions);
   } else {
     await workspace.cloc(args.name, clocOptions);
   }
