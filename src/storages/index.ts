@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { Storage, StorageType } from './types';
 import { JSONStorage } from './json_storage';
 import { SQLiteStorage } from './sqlite_storage';

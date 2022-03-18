@@ -1,5 +1,5 @@
 import { PromisedDatabase as Database } from 'promised-sqlite3';
-import { StorageType } from './types';
+import { Record, StorageType } from './types';
 import { BaseStorage } from './base_storage';
 
 const CREATE_MAIN_TABLE = `
@@ -26,6 +26,27 @@ export class SQLiteStorage extends BaseStorage {
     await db.run(CREATE_MAIN_TABLE);
     await db.close();
   }
+
+  async getLastRecords(project: string): Promise<Record[]> {
+    const db = new Database();
+    await db.open(this.path);
+    try {
+      const lastDateTime: string = await db.get(
+        'SELECT dateTime FROM ClocRecord WHERE project = ? ORDER BY dateTime DESC LIMIT 1',
+        project
+      );
+      return (await db.all(
+        `SELECT dateTime, project, language, fileCount, blankLines, commentLines, codeLines
+          FROM ClocRecord
+          WHERE dateTime = ? AND project = ?
+          ORDER BY dateTime DESC`,
+        [lastDateTime, project]
+      )) as Record[];
+    } finally {
+      await db.close();
+    }
+  }
+
   protected async flushBuffer(): Promise<void> {
     const db = new Database();
     await db.open(this.path);

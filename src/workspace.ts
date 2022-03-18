@@ -4,6 +4,7 @@ import os from 'os';
 import dayjs from 'dayjs';
 import { execChildCommand } from './child_process';
 import { createStorage, Commit, Record, StorageType, Storage } from './storages';
+import git from './git';
 
 type DailyCommit = {
   date: dayjs.Dayjs;
@@ -54,40 +55,16 @@ export class Workspace {
     if (cloned) {
       const projectFolder = path.join(this.baseFolder, folderName);
       console.log(`Folder ${folderName} exist, update it`);
-      await execChildCommand('git reset --hard', projectFolder);
-      await execChildCommand('git clean -fd', projectFolder);
-      await execChildCommand(`git checkout ${this.mainBranch}`, projectFolder);
-      await execChildCommand('git pull', projectFolder);
+      await git.update(projectFolder, this.mainBranch);
     } else {
       console.log(`Folder ${folderName} is not exist, clone it`);
-      await execChildCommand(`git clone "${repo}" "${folderName}"`, this.baseFolder);
+      await git.clone(repo, folderName, this.baseFolder);
     }
   }
 
   async clocAll(folderName: string, options?: ClocOptions, since?: string): Promise<void> {
     const projectFolder = path.join(this.baseFolder, folderName);
-    const commitsPath = path.join(this.tempFolder, `${folderName}.commits.list`);
-    const sinceArg = since ? ` --since="${since}"` : '';
-    await execChildCommand(
-      `git log --pretty='format:%aI %h %ae'${sinceArg} > ${commitsPath}`,
-      projectFolder,
-      false
-    );
-    const commitsRaw = await fs.promises.readFile(commitsPath, { encoding: 'utf8' });
-    // filter empty, convert to Commit and sort in ASC
-    const commits: Commit[] = commitsRaw
-      .trim()
-      .split('\n')
-      .filter((line) => !!line && line.indexOf('users.noreply.github.com') === -1)
-      .map<Commit>((line) => {
-        const splited: string[] = line.split(' ');
-        return {
-          dateTime: splited[0],
-          shortHash: splited[1],
-          authorEmail: splited[2],
-        };
-      })
-      .sort((a, b) => Date.parse(a.dateTime) - Date.parse(b.dateTime));
+    const commits: Commit[] = await git.log('%aI %h %ae', folderName, projectFolder, since);
     let currentDate: dayjs.Dayjs | null = null;
     // build dialy commits
     const dailyCommits = commits.reduce<DailyCommit[]>((acc, commit) => {
@@ -128,20 +105,12 @@ export class Workspace {
         console.log(
           `cloc ${dailyCommit.date.format('YYYY-MM-DD')} => ${dailyCommit.commit!.shortHash}`
         );
-        await execChildCommand(
-          `git checkout ${dailyCommit.commit!.shortHash} > /dev/null 2>&1`,
-          projectFolder,
-          false
-        );
+        await git.checkout(dailyCommit.commit!.shortHash, projectFolder);
         lastResult = await this.cloc(folderName, options, dailyCommit.date.toISOString());
       }
     }
     // checkout back to the main branch
-    await execChildCommand(
-      `git checkout ${this.mainBranch} > /dev/null 2>&1`,
-      projectFolder,
-      false
-    );
+    await git.checkout(this.mainBranch, projectFolder);
   }
 
   async cloc(folderName: string, options?: ClocOptions, dateTime?: string): Promise<Record[]> {

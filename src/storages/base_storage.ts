@@ -6,6 +6,7 @@ export abstract class BaseStorage implements Storage {
   protected buffers: Record[] = [];
   // abstract interfaces
   abstract init(path: string): Promise<void>;
+  abstract getLastRecords(project: string): Promise<Record[]>;
   protected abstract flushBuffer(): Promise<void>;
   // implementations
   async putRecords(records: Record[]): Promise<void> {

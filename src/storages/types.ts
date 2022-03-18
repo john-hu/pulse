@@ -16,6 +16,7 @@ export type Record = {
 export interface Storage {
   init(path: string): Promise<void>;
   putRecords(records: Record[]): Promise<void>;
+  getLastRecords(project: string): Promise<Record[]>;
   finalize(): Promise<void>;
 }
 
