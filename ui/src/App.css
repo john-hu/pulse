@@ -1,0 +1,8 @@
+.App {
+  text-align: center;
+}
+
+.line-chart > div {
+  margin-left: auto;
+  margin-right: auto;
+}
