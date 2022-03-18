@@ -19,6 +19,8 @@ dotenv.config();
     help: 'The folder name for this repo',
   });
   parser.add_argument('--cloc-list', { type: 'str', help: 'The cloc list file.' });
+  parser.add_argument('--cloc-exclude-dir', { type: 'str', help: 'The cloc exclude dirs.' });
+  parser.add_argument('--cloc-exclude-lang', { type: 'str', help: 'The cloc language.' });
   parser.add_argument('--storage-type', {
     type: 'str',
     default: 'json',
@@ -48,14 +50,15 @@ dotenv.config();
   const workspace = new Workspace(args.workspace, storageType, args.storage_path);
   await workspace.init(args.main_branch);
   await workspace.syncRepo(args.repo, args.name);
+  const clocOptions = {
+    fileList: args.cloc_list ? path.resolve(args.cloc_list) : undefined,
+    excludeDir: args.cloc_exclude_dir,
+    excludeLang: args.cloc_exclude_lang,
+  };
   if (args.cloc_main === 'false') {
-    await workspace.clocAll(
-      args.name,
-      args.cloc_list ? path.resolve(args.cloc_list) : undefined,
-      args.analyze_since
-    );
+    await workspace.clocAll(args.name, clocOptions, args.analyze_since);
   } else {
-    await workspace.cloc(args.name, args.cloc_list ? path.resolve(args.cloc_list) : undefined);
+    await workspace.cloc(args.name, clocOptions);
   }
   await workspace.finalize();
 })();

@@ -11,6 +11,12 @@ type DailyCommit = {
   shadow: boolean;
 };
 
+type ClocOptions = {
+  fileList?: string;
+  excludeDir?: string;
+  excludeLang?: string;
+};
+
 export class Workspace {
   baseFolder: string = '.';
   storageType: StorageType = StorageType.JSON;
@@ -58,7 +64,7 @@ export class Workspace {
     }
   }
 
-  async clocAll(folderName: string, fileList?: string, since?: string): Promise<void> {
+  async clocAll(folderName: string, options?: ClocOptions, since?: string): Promise<void> {
     const projectFolder = path.join(this.baseFolder, folderName);
     const commitsPath = path.join(this.tempFolder, `${folderName}.commits.list`);
     const sinceArg = since ? ` --since="${since}"` : '';
@@ -127,7 +133,7 @@ export class Workspace {
           projectFolder,
           false
         );
-        lastResult = await this.cloc(folderName, fileList, dailyCommit.date.toISOString());
+        lastResult = await this.cloc(folderName, options, dailyCommit.date.toISOString());
       }
     }
     // checkout back to the main branch
@@ -138,11 +144,13 @@ export class Workspace {
     );
   }
 
-  async cloc(folderName: string, fileList?: string, dateTime?: string): Promise<Record[]> {
+  async cloc(folderName: string, options?: ClocOptions, dateTime?: string): Promise<Record[]> {
     const jsonPath = path.join(this.tempFolder, 'cloc.json');
-    const listFile = !fileList ? ' .' : ` --list-file="${fileList}"`;
+    const listFile = !options?.fileList ? ' .' : ` --list-file="${options.fileList}"`;
+    const excludeDir = options?.excludeDir ? ` --exclude-dir="${options.excludeDir}"` : '';
+    const excludeLang = options?.excludeLang ? ` --exclude-lang="${options.excludeLang}"` : '';
     await execChildCommand(
-      `"${process.env.CLOC}"${listFile} --json --out="${jsonPath}"`,
+      `"${process.env.CLOC}"${listFile}${excludeDir}${excludeLang} --json --out="${jsonPath}"`,
       path.join(this.baseFolder, folderName)
     );
     // load the result back
