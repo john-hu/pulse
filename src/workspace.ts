@@ -69,6 +69,7 @@ export class Workspace {
   ): Promise<DailyCommit[]> {
     const commits: Commit[] = await git.log('%aI %h %ae', folderName, projectFolder, since);
     let currentDate: dayjs.Dayjs | null = null;
+    const sinceDayjs: dayjs.Dayjs | null = since ? dayjs(since) : null;
     // build dialy commits
     return commits
       // git log list commits based on merge time. We need to list on commit time. For example:
@@ -77,7 +78,12 @@ export class Workspace {
       // 14th, it shows up. We need to filter them out.
       // TODO: there may be an issue that we lost the commits which is not merged today.
       // TODO: We should fix it. Fortunately, the data catches up in the commit after merged date.
-      .filter((commit) => (since ? commit.dateTime >= since : true))
+      .filter((commit) => {
+        // The commit.dateTime is in local timezone. The since is in UTC. We should use dayjs to
+        // make them consistent.
+        const commitDate: dayjs.Dayjs = dayjs(commit.dateTime);
+        return (sinceDayjs ? commitDate.diff(sinceDayjs, 'day') > 0 : true);
+      })
       .reduce<DailyCommit[]>((acc, commit) => {
         const commitDate = dayjs(commit.dateTime).startOf('day');
         if (!currentDate) {
